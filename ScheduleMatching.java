@@ -1,8 +1,12 @@
+/*
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Collections;
 import java.lang.Math;
-import java.util.Random;
+import java.util.Random;*/
+import java.util.*; 
+import java.lang.*; 
+import java.io.*; 
 
 public class ScheduleMatching {
 
@@ -28,15 +32,59 @@ public class ScheduleMatching {
     	//2) traverse all the shifts of all volunteers to create our total matrix of shifts
     	ArrayList<ArrayList<Volunteer>> allAvailabilities = createMasterSchedule(volunteers, totalShifts);
 
-    	//lets now print the master list to see if works as expected:
-    	int day = 0;
-    	for (ArrayList<Volunteer> i : allAvailabilities) {
-    		System.out.print(" day " + day++ + " volunteers -> ");
-    		for (Volunteer j : i ) {
-    			System.out.print(j.name + " ");
-    		}
-    		System.out.println(""); //printing a new line
+    	//3) assignt who are the selected volunteers for each shift
+    	//based on previous shifts assigned
+    	// and based on less shit availables
+    	ArrayList<Volunteer> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
+
+    	//4) print final volunteer list to study results:
+
+    	System.out.println("The final Schedule is: ");
+    	int j = 0;
+    	for( Volunteer i : finalVolunteerList) {
+    		System.out.print(" for day " + j++ + " assingt to: ");
+    		System.out.println(i.name);
     	}
+
+    	System.out.println("***********************");
+    	System.out.println("The final Volunteer list is: ");
+
+    	for( Volunteer i : finalVolunteerList) {
+    		System.out.println(i.name + " shiftAssigned: " + i.shiftAssigned);
+    	}
+    }
+
+    public static ArrayList<Volunteer> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
+    	ArrayList<Volunteer> finalVolunteerList = new ArrayList<Volunteer>();
+    	int shiftDate = 0;
+    	for (ArrayList<Volunteer> i : allAvailabilities) {	//traverses over the volunteer list
+    		if (i.size() < 1) {
+    			finalVolunteerList.add(new Volunteer("not Available"));
+    		}
+    		else {
+    			finalVolunteerList.add(assignShiftTo(i, shiftDate));
+    		}
+    		shiftDate++;
+    	}
+    	return finalVolunteerList;
+    }
+
+
+    public static Volunteer assignShiftTo (ArrayList<Volunteer> list, int shiftDate) {
+    	if (list.size() == 1) {
+    		list.get(0).shiftAssigned.add(shiftDate);
+    		//** TAREA!!! ENTENDER POR QUE EL ADD)(SHIFTDATE IS NOT WORKING PROPERLY**//)
+    		return list.get(0);
+		}
+		else if (list.get(0).compareByShiftAssigned(list.get(1)) <= 0) {
+			list.get(0).shiftAssigned.add(shiftDate);
+			return list.get(0);
+		}
+		else {
+			// remove first element and make recursive call
+			list.remove(0);
+			return assignShiftTo(list, shiftDate);
+		}
     }
 
     public static ArrayList<ArrayList<Volunteer>> createMasterSchedule(ArrayList<Volunteer> volunteers, int totalShifts) {
@@ -47,12 +95,49 @@ public class ScheduleMatching {
     		allAvailabilities.add(vol);
 		}
     	for (Volunteer i : volunteers) {					//traverse all volunteers
-    		for (Integer j : i.shiftAvailables) {		//traverse the available shifts of such volunteer
+    		for (Integer j : i.shiftAvailable) {		//traverse the available shifts of such volunteer
     			allAvailabilities.get(j.intValue()).add(i);	//adding this volunteer to the respective allAvailabilityList
     		}
     	}
+
+    	//lets now print the UNSORTED master list to see if works as expected:
+    	System.out.println("Printing Unsorted Matrix");
+    	int day = 0;
+    	for (ArrayList<Volunteer> i : allAvailabilities) {
+    		System.out.print(" day " + day++ + " volunteers -> ");
+    		for (Volunteer j : i ) {
+    			System.out.print(j.name + " ");
+    		}
+    		System.out.println(""); //printing a new line
+    	}
+
+
+    	//sort the lists by shiftAvailable de menor a mayor
+    	for (ArrayList<Volunteer> v : allAvailabilities) {
+    		Collections.sort( v, new sortByNumberOfShiftsAvailables());
+    	}
+
+    	//lets now print the SORTED master list to see if works as expected:
+    	System.out.println("Printing Sorted Matrix");
+    	int day2 = 0;
+    	for (ArrayList<Volunteer> i : allAvailabilities) {
+    		System.out.print(" day " + day2++ + " volunteers -> ");
+    		for (Volunteer j : i ) {
+    			System.out.print(j.name + " ");
+    		}
+    		System.out.println(""); //printing a new line
+    	}
+
     	return allAvailabilities;
     }
+
+	public static class sortByNumberOfShiftsAvailables implements Comparator<Volunteer> 
+	{ 
+	    public int compare(Volunteer a, Volunteer b) 
+	    { 
+	        return a.shiftAvailable.size() - b.shiftAvailable.size(); 
+	    } 
+	} 
 
     //Generates volunteers for testing
     //the number of volunteers are SHIFTS_PER_DAY + DAYS (random assumption)

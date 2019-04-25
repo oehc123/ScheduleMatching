@@ -1,1 +1,5 @@
 *.class
+.classpath
+.project
+Schedule.sublime-project
+Schedule.sublime-workspace
