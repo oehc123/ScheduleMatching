@@ -6,6 +6,10 @@ public class Volunteer {
 	ArrayList<Integer> shiftAvailable; // = new ArrayList<String>();
 	ArrayList<Integer> shiftAssigned; // = new ArrayList<String>();
 
+	public Volunteer() {
+		this.name = "defaultVolunteer";
+	}
+
 	public Volunteer (String name, String email, String phoneNumber, ArrayList shiftAvailable) {
 		this.name = name;
 		this.email = email;

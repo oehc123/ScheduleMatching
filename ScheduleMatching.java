@@ -69,22 +69,34 @@ public class ScheduleMatching {
     	return finalVolunteerList;
     }
 
-
+    //primero tenemos q encontrar el minimo size del shiftassigned
+    //usando el algoritmos escrito en Helloworld ->
+    //Ya casi cheito
     public static Volunteer assignShiftTo (ArrayList<Volunteer> list, int shiftDate) {
+    	Volunteer volFinal = new Volunteer();
     	if (list.size() == 1) {
     		list.get(0).shiftAssigned.add(shiftDate);
-    		//** TAREA!!! ENTENDER POR QUE EL ADD)(SHIFTDATE IS NOT WORKING PROPERLY**//)
-    		return list.get(0);
-		}
-		else if (list.get(0).compareByShiftAssigned(list.get(1)) <= 0) {
-			list.get(0).shiftAssigned.add(shiftDate);
-			return list.get(0);
+    		volFinal = list.get(0);
 		}
 		else {
-			// remove first element and make recursive call
-			list.remove(0);
-			return assignShiftTo(list, shiftDate);
+			int min = list.get(0).shiftAssigned.size();
+			Iterator<Volunteer> itr = list.iterator();
+			Volunteer temp;
+			while (itr.hasNext()){
+				temp = itr.next();
+				if (temp.shiftAssigned.size() < min) {
+					min = temp.shiftAssigned.size();
+				}
+			}
+			for(Volunteer i : list) {
+				if (i.shiftAssigned.size() == min) {
+					volFinal = i;
+					break;
+				}
+			}
 		}
+		volFinal.shiftAssigned.add(shiftDate);
+		return volFinal;
     }
 
     public static ArrayList<ArrayList<Volunteer>> createMasterSchedule(ArrayList<Volunteer> volunteers, int totalShifts) {
@@ -99,18 +111,6 @@ public class ScheduleMatching {
     			allAvailabilities.get(j.intValue()).add(i);	//adding this volunteer to the respective allAvailabilityList
     		}
     	}
-
-    	//lets now print the UNSORTED master list to see if works as expected:
-    	System.out.println("Printing Unsorted Matrix");
-    	int day = 0;
-    	for (ArrayList<Volunteer> i : allAvailabilities) {
-    		System.out.print(" day " + day++ + " volunteers -> ");
-    		for (Volunteer j : i ) {
-    			System.out.print(j.name + " ");
-    		}
-    		System.out.println(""); //printing a new line
-    	}
-
 
     	//sort the lists by shiftAvailable de menor a mayor
     	for (ArrayList<Volunteer> v : allAvailabilities) {
