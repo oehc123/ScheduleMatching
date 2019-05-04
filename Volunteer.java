@@ -10,7 +10,7 @@ public class Volunteer {
 		this.name = "defaultVolunteer";
 	}
 
-	public Volunteer (String name, String email, String phoneNumber, ArrayList shiftAvailable) {
+	public Volunteer (String name, String phoneNumber, String email, ArrayList shiftAvailable) {
 		this.name = name;
 		this.email = email;
 		this.phoneNumber = phoneNumber;
