@@ -12,6 +12,7 @@ public class ScheduleMatching {
 
 	public static int DAYS = 2;
 	public static int SHIFTS_PER_DAY = 8;
+	public static int VOLUNTEERS_PER_SHIFT = 4;
 
     public static void main(String[] args) {
     	int totalShifts = SHIFTS_PER_DAY * DAYS;
@@ -35,48 +36,51 @@ public class ScheduleMatching {
     	//3) assignt who are the selected volunteers for each shift
     	//based on previous shifts assigned
     	// and based on less shit availables
-    	ArrayList<Volunteer> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
+    	ArrayList<ArrayList<Volunteer>> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
 
     	//4) print final volunteer list to study results:
 
     	System.out.println("The final Schedule is: ");
     	int j = 0;
-    	for( Volunteer i : finalVolunteerList) {
-    		System.out.print(" for day " + j++ + " assingt to: ");
-    		System.out.println(i.name);
+    	for( ArrayList<Volunteer> i : finalVolunteerList) {
+    		for( Volunteer v : i) {
+    			System.out.print(" for day " + j + " assingt to: ");
+        		System.out.println(v.name);
+    		}
+    		j++;
     	}
 
     	System.out.println("***********************");
     	System.out.println("The final Volunteer list is: ");
 
-    	for( Volunteer i : finalVolunteerList) {
+    	for( Volunteer i : volunteers) {
     		System.out.println(i.name + " shiftAssigned: " + i.shiftAssigned);
     	}
     }
 
-    public static ArrayList<Volunteer> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
-    	ArrayList<Volunteer> finalVolunteerList = new ArrayList<Volunteer>();
+    public static ArrayList<ArrayList<Volunteer>> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
+    	ArrayList<ArrayList<Volunteer>> finalVolunteerList = new ArrayList<ArrayList<Volunteer>>();
     	int shiftDate = 0;
     	for (ArrayList<Volunteer> i : allAvailabilities) {	//traverses over the volunteer list
-    		if (i.size() < 1) {
-    			finalVolunteerList.add(new Volunteer("not Available"));
-    		}
-    		else {
-    			finalVolunteerList.add(assignShiftTo(i, shiftDate));
-    		}
+    		finalVolunteerList.add(assignShiftTo(i, shiftDate, new ArrayList<Volunteer>()));
     		shiftDate++;
     	}
     	return finalVolunteerList;
     }
-
-    //primero tenemos q encontrar el minimo size del shiftassigned
-    //usando el algoritmos escrito en Helloworld ->
-    //Ya casi cheito
-    public static Volunteer assignShiftTo (ArrayList<Volunteer> list, int shiftDate) {
-    	Volunteer volFinal = new Volunteer();
-    	if (list.size() == 1) {
+    
+//this returns an array list with the set of volunteers for that specific shift
+    public static ArrayList<Volunteer> assignShiftTo (ArrayList<Volunteer> list, int shiftDate, ArrayList<Volunteer> volunteerSet) {
+    	if (volunteerSet.size() == VOLUNTEERS_PER_SHIFT) {
+    		return volunteerSet;
+    	}
+    	else if (list.size() < 1) {
+    		volunteerSet.add(new Volunteer("not Available"));
+    		return volunteerSet;
+    	}
+    	else if (list.size() == 1) {
     		list.get(0).shiftAssigned.add(shiftDate);
-    		volFinal = list.get(0);
+    		volunteerSet.add(list.get(0));
+    		return volunteerSet;
 		}
 		else {
 			int min = list.get(0).shiftAssigned.size();
@@ -90,13 +94,14 @@ public class ScheduleMatching {
 			}
 			for(Volunteer i : list) {
 				if (i.shiftAssigned.size() == min) {
-					volFinal = i;
+					i.shiftAssigned.add(shiftDate);
+					volunteerSet.add(i);
+					list.remove(i);
 					break;
 				}
 			}
+			return assignShiftTo(list, shiftDate, volunteerSet);
 		}
-		volFinal.shiftAssigned.add(shiftDate);
-		return volFinal;
     }
 
     public static ArrayList<ArrayList<Volunteer>> createMasterSchedule(ArrayList<Volunteer> volunteers, int totalShifts) {
