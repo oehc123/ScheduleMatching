@@ -1,5 +1,6 @@
-import java.util.*; 
-import java.lang.*; 
+import java.util.*;
+
+import com.opencsv.CSVWriter;
 import java.io.*; 
 
 public class HelloWorld {
@@ -8,22 +9,30 @@ public class HelloWorld {
     public static void main(String[] args) {
         // Prints "Hello, World" to the terminal window.
         System.out.println("Hello, World");
-        ArrayList<Integer> arr = new ArrayList<Integer>();
-        arr.add(11);
-		arr.add(9);
-		arr.add(4);
-		arr.add(11);
-		arr.add(3);
-
-		Integer min = arr.get(0);
-		Iterator<Integer> itr = arr.iterator();
-		Integer temp;
-		while (itr.hasNext()){
-			temp = itr.next();
-			if (temp.compareTo(min) < 0) {
-				min = temp;
-			}
-		}
-		System.out.println(" the min of the list is: " + min);
+        File file = new File("./JoseNewFile"); 
+        try { 
+            // create FileWriter object with file as parameter 
+            FileWriter outputfile = new FileWriter(file); 
+      
+            // create CSVWriter object filewriter object as parameter 
+            CSVWriter writer = new CSVWriter(outputfile); 
+      
+            // adding header to csv 
+            String[] header = { "Name", "Class", "Marks" }; 
+            writer.writeNext(header); 
+      
+            // add data to csv 
+            String[] data1 = { "Aman", "10", "620" }; 
+            writer.writeNext(data1); 
+            String[] data2 = { "Suraj", "10", "630" }; 
+            writer.writeNext(data2); 
+      
+            // closing writer connection 
+            writer.close(); 
+        } 
+        catch (IOException e) { 
+            // TODO Auto-generated catch block 
+            e.printStackTrace(); 
+        } 
     }
 }

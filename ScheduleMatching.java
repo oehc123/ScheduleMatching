@@ -1,65 +1,103 @@
-import java.io.FileReader;
+import java.io.*;
 import java.util.*; 
-import java.io.*; 
-
 import com.opencsv.CSVReader;
-
-import javafx.util.Pair;
+import com.opencsv.CSVWriter;
 
 public class ScheduleMatching {
 
-	public static int DAYS = 2;
-	public static int SHIFTS_PER_DAY = 8;
+	public static int NUMBEROFTYPES = 2;			//numbers of shifts types per day (early shift and late shift) or (shit A and Shift B)
+	public static int VOLUNTEERS_PER_SHIFT = 4;
 	public static int NAMECOL, PHONECOL, EMAILCOL;
-	public static ArrayList<Integer> AVAILABILITYCOL = new ArrayList<Integer>();
-	public static int NUMBEROFTYPES = 2;
-	public static ArrayList<String> AVAILABILITYTITLES = new ArrayList<String>();;
+	public static ArrayList<Integer> AVAILABILITYCOL = new ArrayList<Integer>();	// the indexes of columns that start with Availability
+	public static ArrayList<String> AVAILABILITYTITLES = new ArrayList<String>();  //tracks the different availabilities in this table
 
-    public static void main(String[] args) {
-    /*	int totalShifts = SHIFTS_PER_DAY * DAYS;
-        System.out.println("Hello, to Jose's ScheduleMatching project.");
-        System.out.println("This sample consiste of " + DAYS + " days event, ");
-        System.out.println("with " + SHIFTS_PER_DAY + " shifts");
-        System.out.println("with a total of " + totalShifts + " shifts to be filled up");
-        System.out.println("Let's see how what is the best way for us to fill it up");
-*/
-    	//int totalShifts = AVAILABILITYCOL.size() * NUMBEROFTYPES;
-    	int totalShifts = 18;
-    	
-        //below we populate volunteers
-        ArrayList<Volunteer> volunteers = loadVolunteersFromCSVFile(totalShifts);
- //       System.out.println("there is a total of " + volunteers.size() + " volunteers in this run ");
- //       System.out.println("created volunteers are: ");
+    public static void main(String[] args) {    	 
+        //populate volunteers
+        ArrayList<Volunteer> volunteers = loadVolunteersFromCSVFile();
+        System.out.println("Volunteers loaded:");
         for (Volunteer i : volunteers) {
     		System.out.println(i);
     	}
         
     	//2) traverse all the shifts of all volunteers to create our total matrix of shifts
-    	ArrayList<ArrayList<Volunteer>> allAvailabilities = createMasterSchedule(volunteers, totalShifts);
+    	ArrayList<ArrayList<Volunteer>> allAvailabilities = createMasterSchedule(volunteers);
 
-    	//3) assignt who are the selected volunteers for each shift
+    	//3) assign who are the selected volunteers for each shift
     	//based on previous shifts assigned
-    	// and based on less shit availables
-    	ArrayList<Volunteer> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
+    	// and based on less shit available per volunteer
+    	ArrayList<ArrayList<Volunteer>> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
 
-    	//4) print final volunteer list to study results:
+        //4) print final volunteer list:
+        System.out.println("The final Schedule is: ");
+        int j = 0;
+        for( ArrayList<Volunteer> i : finalVolunteerList) {
+            for( Volunteer v : i) {
+                System.out.print(integerToShift(j) + " assingt to: ");
+                System.out.println(v.name + j);
+            }
+            j++;
+        }
 
-    	System.out.println("The final Schedule is: ");
-    	int j = 0;
-    	for(Volunteer i : finalVolunteerList) {
-    		String shift = integerToShift(j++);
-    		System.out.println(shift + " assigned to " + i.name);
-    	}
 
     	System.out.println("***********************");
-    	System.out.println("The final Volunteer list is: ");
-
+    	System.out.println("The final Volunteer list with their assinged shifts is: ");
     	for(Volunteer i : volunteers) {
-    		System.out.println(i.name + " shiftAssigned: " + i.shiftAssigned);
+    		System.out.print(i.name + " shiftAssigned: ");
+    		for (int k : i.shiftAssigned) {
+    			System.out.print(", " + integerToShift(k).replaceFirst("Availability", ""));
+    		}
+    		System.out.println(""); //printing new line
     	}
+    	createOutputFile(finalVolunteerList, volunteers);		//to show the final table of schedules and volunteers with assinged shifts
     }
 
-    private static String integerToShift(int j) {
+    private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable, ArrayList<Volunteer> volunteers) {
+    	//create output file:
+    	File file = new File("./ScheduleOutput.csv");
+    	 try { 
+             // create FileWriter object with file as parameter 
+             FileWriter outputfile = new FileWriter(file); 
+       
+             // create CSVWriter object filewriter object as parameter 
+             CSVWriter writer = new CSVWriter(outputfile); 
+             String[] header = new String [AVAILABILITYTITLES.size()+1];
+             header[0] = "TypeShift/Dates";
+             String temp;
+             for (int i = 1; i < header.length; i++) {
+            	 temp = AVAILABILITYTITLES.get(i-1);
+            	 header[i] = temp;
+             }
+             writer.writeNext(header); 			//Writing the headers
+
+             String[] data;// = new String[AVAILABILITYTITLES.size()+1];
+             int tableIndexRowReader = 0;
+             int dataIndex = 0;
+             for(int tableIndexColumnReader = 0; tableIndexColumnReader < finalTable.get(tableIndexRowReader).size(); tableIndexColumnReader ++) 
+             { 
+                 dataIndex = 0;
+            	 data = new String[AVAILABILITYTITLES.size()+1];
+                 data[dataIndex] = "A";
+                 dataIndex++; 
+	             while(tableIndexRowReader < finalTable.size()) {
+					if (tableIndexColumnReader < finalTable.get(tableIndexRowReader).size()) {
+						data[dataIndex] = finalTable.get(tableIndexRowReader).get(tableIndexColumnReader).name;
+						dataIndex++;
+					}
+					tableIndexRowReader = tableIndexRowReader + 2;
+				}
+				writer.writeNext(data);
+				tableIndexRowReader = 0;
+             }
+             writer.close(); 
+    	 }	catch (IOException e) { 
+             e.printStackTrace(); 
+         } 
+		
+	}
+
+    //input: index of AVAILABILITYTITLES TABLE
+    //output: Shift A or Shift B
+	private static String integerToShift(int j) {
     	String answer = "";
     	int col;
     	if (j % 2 == 0) { // is even thus, is shift Type A
@@ -70,54 +108,61 @@ public class ScheduleMatching {
     		col = (j-1) / 2;
     		answer = "Shift B";
     	}
-    	answer = AVAILABILITYTITLES.get(col) + " " + answer;	
+    	answer = AVAILABILITYTITLES.get(col) + " " + answer;
+    	answer = answer.toLowerCase().replace("availability", "");
+    	answer = answer.replace("[", "");
+    	answer = answer.replace("]", "");
 		return answer;
 	}
 
-	public static ArrayList<Volunteer> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
-    	ArrayList<Volunteer> finalVolunteerList = new ArrayList<Volunteer>();
-    	int shiftDate = 0;
-    	for (ArrayList<Volunteer> i : allAvailabilities) {	//traverses over the volunteer list
-    		if (i.size() < 1) {
-    			finalVolunteerList.add(new Volunteer("not Available"));
-    		}
-    		else {
-    			finalVolunteerList.add(assignShiftTo(i, shiftDate));
-    		}
-    		shiftDate++;
-    	}
-    	return finalVolunteerList;
+	public static ArrayList<ArrayList<Volunteer>> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
+    	ArrayList<ArrayList<Volunteer>> finalVolunteerList = new ArrayList<ArrayList<Volunteer>>();
+        int shiftDate = 0;
+        for (ArrayList<Volunteer> i : allAvailabilities) {  //traverses over the volunteer list
+            finalVolunteerList.add(assignShiftTo(i, shiftDate, new ArrayList<Volunteer>()));
+            shiftDate++;
+        }
+        return finalVolunteerList;
     }
 
 
-    public static Volunteer assignShiftTo (ArrayList<Volunteer> list, int shiftDate) {
-    	Volunteer volFinal = new Volunteer();
-    	if (list.size() == 1) {
-    		list.get(0).shiftAssigned.add(shiftDate);
-    		volFinal = list.get(0);
-		}
-		else {
-			int min = list.get(0).shiftAssigned.size();
-			Iterator<Volunteer> itr = list.iterator();
-			Volunteer temp;
-			while (itr.hasNext()){
-				temp = itr.next();
-				if (temp.shiftAssigned.size() < min) {
-					min = temp.shiftAssigned.size();
-				}
-			}
-			for(Volunteer i : list) {
-				if (i.shiftAssigned.size() == min) {
-					volFinal = i;
-					break;
-				}
-			}
-			volFinal.shiftAssigned.add(shiftDate);
-		}
-		return volFinal;
+    public static ArrayList<Volunteer> assignShiftTo (ArrayList<Volunteer> list, int shiftDate, ArrayList<Volunteer> volunteerSet) {
+        if (volunteerSet.size() == VOLUNTEERS_PER_SHIFT) {
+            return volunteerSet;
+        }
+        else if (list.size() < 1) {
+            volunteerSet.add(new Volunteer("not Available"));
+            return volunteerSet;
+        }
+        else if (list.size() == 1) {
+            list.get(0).shiftAssigned.add(shiftDate);
+            volunteerSet.add(list.get(0));
+            return volunteerSet;
+        }
+        else {
+            int min = list.get(0).shiftAssigned.size();
+            Iterator<Volunteer> itr = list.iterator();
+            Volunteer temp;
+            while (itr.hasNext()){
+                temp = itr.next();
+                if (temp.shiftAssigned.size() < min) {
+                    min = temp.shiftAssigned.size();
+                }
+            }
+            for(Volunteer i : list) {
+                if (i.shiftAssigned.size() == min) {
+                    i.shiftAssigned.add(shiftDate);
+                    volunteerSet.add(i);
+                    list.remove(i);
+                    break;
+                }
+            }
+            return assignShiftTo(list, shiftDate, volunteerSet);
+        }
     }
 
-    public static ArrayList<ArrayList<Volunteer>> createMasterSchedule(ArrayList<Volunteer> volunteers, int totalShifts) {
+    public static ArrayList<ArrayList<Volunteer>> createMasterSchedule(ArrayList<Volunteer> volunteers) {
+    	int totalShifts = AVAILABILITYCOL.size() * 2;
     	ArrayList<ArrayList<Volunteer>> allAvailabilities = new ArrayList<>();
     	for (int i = 0; i < totalShifts; i++) {
     		ArrayList <Volunteer> vol = new ArrayList<>();
@@ -135,14 +180,14 @@ public class ScheduleMatching {
     	}
 
     	//lets now print the SORTED master list to see if works as expected:
-    	System.out.println("Printing Sorted Matrix");
+    	System.out.println("Printing Sorted Matrix with all availabilities");
     	int day2 = 0;
     	String shift;
     	for (ArrayList<Volunteer> i : allAvailabilities) {
     		shift = integerToShift(day2++);
     		System.out.print(shift + " volunteers -> ");
     		for (Volunteer j : i ) {
-    			System.out.print(j.name + " ");
+    			System.out.print(j.name + ", ");
     		}
     		System.out.println(""); //printing a new line
     	}
@@ -204,7 +249,7 @@ public class ScheduleMatching {
     	return answer;
     }
     
-    public static ArrayList<Volunteer> loadVolunteersFromCSVFile(int totalShifts) {
+    public static ArrayList<Volunteer> loadVolunteersFromCSVFile() {
     	System.out.println("loadVolunteersFromCSVFile");
         //load the reader
     	CSVReader csvReader = null;
@@ -212,7 +257,7 @@ public class ScheduleMatching {
     	ArrayList<Volunteer> volunteers = new ArrayList<Volunteer>();
 
     	try {
-    		csvReader = new CSVReader(new FileReader("./data/data1.csv"));
+    		csvReader = new CSVReader(new FileReader("./data/data2.csv"));
     		System.out.println("reader created");
     		nextLine = csvReader.readNext();			// reading the titles of columns
     		getDataIndexes(nextLine);		// gets the indexes where name, email and phone are
@@ -230,8 +275,6 @@ public class ScheduleMatching {
         {
             ee.printStackTrace();
         }
-        //read lines
-
 	    return volunteers;
     }
 
