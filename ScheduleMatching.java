@@ -33,8 +33,9 @@ public class ScheduleMatching {
         for( ArrayList<Volunteer> i : finalVolunteerList) {
             for( Volunteer v : i) {
                 System.out.print(integerToShift(j) + " assingt to: ");
-                System.out.println(v.name + j);
+                System.out.println(v.name + ", ");
             }
+            //System.out.println("");
             j++;
         }
 
@@ -49,19 +50,19 @@ public class ScheduleMatching {
     		System.out.println(""); //printing new line
     	}
     	createOutputFile(finalVolunteerList);		//to show the final table of schedules and volunteers with assinged shifts
+    	
+        System.out.println("Volunteers FINAL:");
+        for (Volunteer i : volunteers) {
+    		System.out.println(i);
+    	}
     }
 
 	private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable) {
     	//create output file:
     	File file = new File("./ScheduleOutput.csv");
     	 try { 
-    		 
-             // create FileWriter object with file as parameter 
-             FileWriter outputfile = new FileWriter(file); 
-       
-             // create CSVWriter object filewriter object as parameter 
-             CSVWriter writer = new CSVWriter(outputfile); 
-             
+             FileWriter outputfile = new FileWriter(file); 					// create FileWriter object with file as parameter 
+             CSVWriter writer = new CSVWriter(outputfile); 				// create CSVWriter object filewriter object as parameter 
              writer = fillDataHeader(writer);
              writer = fillDataContent(writer, finalTable);
              writer.close(); 
@@ -84,29 +85,43 @@ public class ScheduleMatching {
          return writer;
 	}
 
-	private static CSVWriter fillDataContent(CSVWriter writer, ArrayList<ArrayList<Volunteer>> finalTable){
-    	 String[] data;					// Used to write each line in the output file
-    	 int dataSize = AVAILABILITYTITLES.size()+1;
-         int tableIndexRowReader = 0;	
-         int dataIndex;
-         for(int tableIndexColumnReader = 0; tableIndexColumnReader < finalTable.get(tableIndexRowReader).size(); tableIndexColumnReader ++) 
-         { 																//Traverses the the final array by columns every TYPENUM spaces
-             dataIndex = 0;
-        	 data = new String[dataSize];
-             data[dataIndex] = "A";
-             dataIndex++; 
-             while(tableIndexRowReader < finalTable.size()) {								//carries the name of the volunteers in each line of the output table
-				if (tableIndexColumnReader < finalTable.get(tableIndexRowReader).size()) {
-					data[dataIndex] = finalTable.get(tableIndexRowReader).get(tableIndexColumnReader).name;
-					dataIndex++;
+	private static CSVWriter fillDataContent(CSVWriter writer, ArrayList<ArrayList<Volunteer>> finalTable) {
+		int totalNumOfTypes = 2;
+		int typeIndexReader = 0;
+		int ASCIIOFFSET = 65;
+		String[] data; // Used to write each line in the output file
+		int dataSize = AVAILABILITYTITLES.size() + 1;
+		int tableIndexRowReader;
+		int dataIndex;
+		while (typeIndexReader < totalNumOfTypes) {
+			tableIndexRowReader = typeIndexReader;
+			for (int tableIndexColumnReader = 0; tableIndexColumnReader < VOLUNTEERS_PER_SHIFT; tableIndexColumnReader++) { // Traverses the the final array by columns every TYPENUM
+															// spaces
+				dataIndex = 0;
+				data = new String[dataSize];
+				data[dataIndex] = Character.toString((char) (typeIndexReader + ASCIIOFFSET)); // "A";
+				dataIndex++;
+				while (tableIndexRowReader < finalTable.size()) { // carries the name of the volunteers in each line of
+																	// the
+																	// output table
+					if (tableIndexColumnReader < finalTable.get(tableIndexRowReader).size()) {	//ensures I am not out of the list horizontally
+						data[dataIndex] = finalTable.get(tableIndexRowReader).get(tableIndexColumnReader).name;
+						dataIndex++;
+					}
+					else {
+						data[dataIndex] = " ";
+						dataIndex++;
+					}
+					tableIndexRowReader = tableIndexRowReader + 2;
 				}
-				tableIndexRowReader = tableIndexRowReader + 2;
+				writer.writeNext(data);
+				tableIndexRowReader = typeIndexReader;
 			}
-			writer.writeNext(data);
-			tableIndexRowReader = 0;
-         }
-    	return writer;
-    }
+			typeIndexReader++;
+		}
+
+		return writer;
+	}
 
     //input: index of AVAILABILITYTITLES TABLE
     //output: Shift A or Shift B
@@ -138,7 +153,9 @@ public class ScheduleMatching {
         return finalVolunteerList;
     }
 
-
+	//input ->	list: volunteer availables to choose from
+	//			shiftDate: date we are looking to fill up
+	//			volunteerSet: list of the volunteers assigned for the specific date shiftDate
     public static ArrayList<Volunteer> assignShiftTo (ArrayList<Volunteer> list, int shiftDate, ArrayList<Volunteer> volunteerSet) {
         if (volunteerSet.size() == VOLUNTEERS_PER_SHIFT) {
             return volunteerSet;
@@ -156,9 +173,9 @@ public class ScheduleMatching {
             int min = list.get(0).shiftAssigned.size();
             Iterator<Volunteer> itr = list.iterator();
             Volunteer temp;
-            while (itr.hasNext()){
+            while (itr.hasNext()){							//from the given list, find the volunteer that has the LEST shifts and save its number
                 temp = itr.next();
-                if (temp.shiftAssigned.size() < min) {
+                if (temp.shiftAssigned.size() < min) {		//re-iterate to find the volunteer with the LEAST shifts assigned to it 
                     min = temp.shiftAssigned.size();
                 }
             }
