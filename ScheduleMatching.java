@@ -26,38 +26,10 @@ public class ScheduleMatching {
     	//based on previous shifts assigned
     	// and based on less shit available per volunteer
     	ArrayList<ArrayList<Volunteer>> finalVolunteerList = generateFinalVolunteerSchedule(allAvailabilities);
-
-        //4) print final volunteer list:
-        System.out.println("The final Schedule is: ");
-        int j = 0;
-        for( ArrayList<Volunteer> i : finalVolunteerList) {
-            for( Volunteer v : i) {
-                System.out.print(integerToShift(j) + " assingt to: ");
-                System.out.println(v.name + ", ");
-            }
-            //System.out.println("");
-            j++;
-        }
-
-
-    	System.out.println("***********************");
-    	System.out.println("The final Volunteer list with their assinged shifts is: ");
-    	for(Volunteer i : volunteers) {
-    		System.out.print(i.name + " shiftAssigned: ");
-    		for (int k : i.shiftAssigned) {
-    			System.out.print(", " + integerToShift(k).replaceFirst("Availability", ""));
-    		}
-    		System.out.println(""); //printing new line
-    	}
-    	createOutputFile(finalVolunteerList);		//to show the final table of schedules and volunteers with assinged shifts
-    	
-        System.out.println("Volunteers FINAL:");
-        for (Volunteer i : volunteers) {
-    		System.out.println(i);
-    	}
+    	createOutputFile(finalVolunteerList, volunteers);		//to show the final table of schedules and volunteers with assinged shifts
     }
 
-	private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable) {
+	private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable, ArrayList<Volunteer> volunteers) {
     	//create output file:
     	File file = new File("./ScheduleOutput.csv");
     	 try { 
@@ -65,12 +37,31 @@ public class ScheduleMatching {
              CSVWriter writer = new CSVWriter(outputfile); 				// create CSVWriter object filewriter object as parameter 
              writer = fillDataHeader(writer);
              writer = fillDataContent(writer, finalTable);
+             // add volunteers and their schedule
+             writer = fillVolunteersWithSchedules(writer, volunteers);
              writer.close(); 
     	 }	catch (IOException e) { 
              e.printStackTrace(); 
          } 
 	}
-    private static CSVWriter fillDataHeader(CSVWriter writer) {
+    private static CSVWriter fillVolunteersWithSchedules(CSVWriter writer, ArrayList<Volunteer> volunteers) {
+    	String[] data;
+    	int dataIndex;
+		for (Volunteer vol : volunteers) {
+			data = new String [vol.shiftAssigned.size() + 1];
+			dataIndex = 0;
+			data[dataIndex] = vol.name;
+			dataIndex++;
+			for (Integer i : vol.shiftAssigned) {
+				data[dataIndex] = integerToShift(i);
+				dataIndex++;
+			}
+			writer.writeNext(data);
+		}
+		return writer;
+	}
+
+	private static CSVWriter fillDataHeader(CSVWriter writer) {
     	 String[] header = new String [AVAILABILITYTITLES.size()+1];
          header[0] = "TypeShift/Dates";
          String temp;
@@ -86,17 +77,15 @@ public class ScheduleMatching {
 	}
 
 	private static CSVWriter fillDataContent(CSVWriter writer, ArrayList<ArrayList<Volunteer>> finalTable) {
-		int totalNumOfTypes = 2;
 		int typeIndexReader = 0;
 		int ASCIIOFFSET = 65;
 		String[] data; // Used to write each line in the output file
 		int dataSize = AVAILABILITYTITLES.size() + 1;
 		int tableIndexRowReader;
 		int dataIndex;
-		while (typeIndexReader < totalNumOfTypes) {
+		while (typeIndexReader < NUMBEROFTYPES) {
 			tableIndexRowReader = typeIndexReader;
 			for (int tableIndexColumnReader = 0; tableIndexColumnReader < VOLUNTEERS_PER_SHIFT; tableIndexColumnReader++) { // Traverses the the final array by columns every TYPENUM
-															// spaces
 				dataIndex = 0;
 				data = new String[dataSize];
 				data[dataIndex] = Character.toString((char) (typeIndexReader + ASCIIOFFSET)); // "A";
@@ -146,12 +135,25 @@ public class ScheduleMatching {
 	public static ArrayList<ArrayList<Volunteer>> generateFinalVolunteerSchedule(ArrayList<ArrayList<Volunteer>> allAvailabilities) {
     	ArrayList<ArrayList<Volunteer>> finalVolunteerList = new ArrayList<ArrayList<Volunteer>>();
         int shiftDate = 0;
+        ArrayList<Volunteer> selectedVolunteers = new ArrayList<Volunteer>();
         for (ArrayList<Volunteer> i : allAvailabilities) {  //traverses over the volunteer list
-            finalVolunteerList.add(assignShiftTo(i, shiftDate, new ArrayList<Volunteer>()));
+        	selectedVolunteers = assignShiftTo(i, shiftDate, new ArrayList<Volunteer>());
+        	//remove duplicates
+        	if (!isLastType(shiftDate)) {	// is not first type, therefore lets remove duplicates
+        		for(int j = shiftDate+1; j < (shiftDate - (shiftDate % NUMBEROFTYPES) + NUMBEROFTYPES); j++) {
+        			allAvailabilities.get(j).removeAll(selectedVolunteers);
+        		}
+        	}
+            finalVolunteerList.add(selectedVolunteers);
             shiftDate++;
         }
         return finalVolunteerList;
     }
+	
+	//for a # of types = 3. Last type is that the curent shiftDate is 3 or multiple of 3
+	private static boolean isLastType(int shiftDate) {
+		return (shiftDate % NUMBEROFTYPES == NUMBEROFTYPES-1);
+	}
 
 	//input ->	list: volunteer availables to choose from
 	//			shiftDate: date we are looking to fill up
@@ -161,7 +163,7 @@ public class ScheduleMatching {
             return volunteerSet;
         }
         else if (list.size() < 1) {
-            volunteerSet.add(new Volunteer("not Available"));
+            volunteerSet.add(new Volunteer(" "));
             return volunteerSet;
         }
         else if (list.size() == 1) {
@@ -267,7 +269,7 @@ public class ScheduleMatching {
     }
     
     private static ArrayList<Integer> getAvailableShifts(String [] entry) {
-    	ArrayList answer = new ArrayList<Integer>();
+    	ArrayList<Integer> answer = new ArrayList<Integer>();
     	for( int i = 0; i < AVAILABILITYCOL.size(); i++) {
     		if (entry[AVAILABILITYCOL.get(i)].contains("Shift A")) {
     			answer.add(formulaShiftToInteger(AVAILABILITYCOL.get(i), "Shift A"));

@@ -18,10 +18,10 @@ public class Volunteer {
 		this.shiftAssigned = new ArrayList<Integer>();
 	}
 
-	public Volunteer (String notAvailable) {			// used to fill up when volunteers are not available
-		this.name = "notAvailable on this day";
-		this.email = "notAvailable on this day";
-		this.phoneNumber = "notAvailable on this day";
+	public Volunteer (String str) {			// used to fill up when volunteers are not available
+		this.name = str;
+		this.email = str;
+		this.phoneNumber = str;
 	}
 	
 	public int compareByShiftAssigned(Volunteer vol) {					//returns >0 if this has MORE than vol shifs assigned, 0 if equal, or <0 if this has LESS than vol shifts assigned
