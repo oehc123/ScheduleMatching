@@ -48,52 +48,65 @@ public class ScheduleMatching {
     		}
     		System.out.println(""); //printing new line
     	}
-    	createOutputFile(finalVolunteerList, volunteers);		//to show the final table of schedules and volunteers with assinged shifts
+    	createOutputFile(finalVolunteerList);		//to show the final table of schedules and volunteers with assinged shifts
     }
 
-    private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable, ArrayList<Volunteer> volunteers) {
+	private static void createOutputFile(ArrayList<ArrayList<Volunteer>> finalTable) {
     	//create output file:
     	File file = new File("./ScheduleOutput.csv");
     	 try { 
+    		 
              // create FileWriter object with file as parameter 
              FileWriter outputfile = new FileWriter(file); 
        
              // create CSVWriter object filewriter object as parameter 
              CSVWriter writer = new CSVWriter(outputfile); 
-             String[] header = new String [AVAILABILITYTITLES.size()+1];
-             header[0] = "TypeShift/Dates";
-             String temp;
-             for (int i = 1; i < header.length; i++) {
-            	 temp = AVAILABILITYTITLES.get(i-1);
-            	 header[i] = temp;
-             }
-             writer.writeNext(header); 			//Writing the headers
-
-             String[] data;// = new String[AVAILABILITYTITLES.size()+1];
-             int tableIndexRowReader = 0;
-             int dataIndex = 0;
-             for(int tableIndexColumnReader = 0; tableIndexColumnReader < finalTable.get(tableIndexRowReader).size(); tableIndexColumnReader ++) 
-             { 
-                 dataIndex = 0;
-            	 data = new String[AVAILABILITYTITLES.size()+1];
-                 data[dataIndex] = "A";
-                 dataIndex++; 
-	             while(tableIndexRowReader < finalTable.size()) {
-					if (tableIndexColumnReader < finalTable.get(tableIndexRowReader).size()) {
-						data[dataIndex] = finalTable.get(tableIndexRowReader).get(tableIndexColumnReader).name;
-						dataIndex++;
-					}
-					tableIndexRowReader = tableIndexRowReader + 2;
-				}
-				writer.writeNext(data);
-				tableIndexRowReader = 0;
-             }
+             
+             writer = fillDataHeader(writer);
+             writer = fillDataContent(writer, finalTable);
              writer.close(); 
     	 }	catch (IOException e) { 
              e.printStackTrace(); 
          } 
-		
 	}
+    private static CSVWriter fillDataHeader(CSVWriter writer) {
+    	 String[] header = new String [AVAILABILITYTITLES.size()+1];
+         header[0] = "TypeShift/Dates";
+         String temp;
+         for (int i = 1; i < header.length; i++) {
+        	 temp = AVAILABILITYTITLES.get(i-1);
+        	 temp = temp.toLowerCase().replace("availability", "");
+        	 temp = temp.replace("[", "");
+        	 temp = temp.replace("]", "");
+        	 header[i] = temp;
+         }
+         writer.writeNext(header); 			//Writing the headers
+         return writer;
+	}
+
+	private static CSVWriter fillDataContent(CSVWriter writer, ArrayList<ArrayList<Volunteer>> finalTable){
+    	 String[] data;					// Used to write each line in the output file
+    	 int dataSize = AVAILABILITYTITLES.size()+1;
+         int tableIndexRowReader = 0;	
+         int dataIndex;
+         for(int tableIndexColumnReader = 0; tableIndexColumnReader < finalTable.get(tableIndexRowReader).size(); tableIndexColumnReader ++) 
+         { 																//Traverses the the final array by columns every TYPENUM spaces
+             dataIndex = 0;
+        	 data = new String[dataSize];
+             data[dataIndex] = "A";
+             dataIndex++; 
+             while(tableIndexRowReader < finalTable.size()) {								//carries the name of the volunteers in each line of the output table
+				if (tableIndexColumnReader < finalTable.get(tableIndexRowReader).size()) {
+					data[dataIndex] = finalTable.get(tableIndexRowReader).get(tableIndexColumnReader).name;
+					dataIndex++;
+				}
+				tableIndexRowReader = tableIndexRowReader + 2;
+			}
+			writer.writeNext(data);
+			tableIndexRowReader = 0;
+         }
+    	return writer;
+    }
 
     //input: index of AVAILABILITYTITLES TABLE
     //output: Shift A or Shift B
